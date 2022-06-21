@@ -11,11 +11,7 @@ def mlc():
 
 
 def ctftime():
-    if get_app_config("OAUTH_PROVIDER") != "ctftime":
-        return False
-    if not is_setup():
-        return True
-    return get_config("oauth_client_id") and get_config("oauth_client_secret")
+    return get_app_config("OAUTH_PROVIDER") == "ctftime"
 
 
 def oauth_registration():
