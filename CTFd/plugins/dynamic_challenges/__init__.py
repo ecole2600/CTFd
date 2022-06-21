@@ -19,6 +19,7 @@ class DynamicChallenge(Challenges):
     initial = db.Column(db.Integer, default=0)
     minimum = db.Column(db.Integer, default=0)
     decay = db.Column(db.Integer, default=0)
+    # deploy_url = db.Column(db.Text)
 
     def __init__(self, *args, **kwargs):
         super(DynamicChallenge, self).__init__(**kwargs)
