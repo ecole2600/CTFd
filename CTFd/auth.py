@@ -12,7 +12,7 @@ from CTFd.utils import config, email, get_app_config, get_config
 from CTFd.utils import user as current_user
 from CTFd.utils import validators
 from CTFd.utils.config import is_teams_mode
-from CTFd.utils.config.integrations import mlc_registration
+from CTFd.utils.config.integrations import oauth_registration
 from CTFd.utils.config.visibility import registration_visible
 from CTFd.utils.crypto import verify_password
 from CTFd.utils.decorators import ratelimit
@@ -417,10 +417,8 @@ def login():
 
 @auth.route("/oauth")
 def oauth_login():
-    endpoint = (
-        get_app_config("OAUTH_AUTHORIZATION_ENDPOINT")
-        or get_config("oauth_authorization_endpoint")
-        or "https://auth.majorleaguecyber.org/oauth/authorize"
+    endpoint = get_app_config("OAUTH_AUTHORIZATION_ENDPOINT") or get_config(
+        "oauth_authorization_endpoint"
     )
 
     if get_config("user_mode") == "teams":
@@ -429,18 +427,23 @@ def oauth_login():
         scope = "profile"
 
     client_id = get_app_config("OAUTH_CLIENT_ID") or get_config("oauth_client_id")
-
     if client_id is None:
         error_for(
             endpoint="auth.login",
             message="OAuth Settings not configured. "
-            "Ask your CTF administrator to configure MajorLeagueCyber integration.",
+            "Ask your CTF administrator to configure MajorLeagueCyber or CTFtime integration.",
         )
         return redirect(url_for("auth.login"))
 
     redirect_url = "{endpoint}?response_type=code&client_id={client_id}&scope={scope}&state={state}".format(
         endpoint=endpoint, client_id=client_id, scope=scope, state=session["nonce"]
     )
+
+    callback_url = get_app_config("OAUTH_CALLBACK_ENDPOINT") or get_config(
+        "oauth_callback_endpoint"
+    )
+    if callback_url:
+        redirect_url += "&redirect_uri={callback_url}".format(callback_url=callback_url)
     return redirect(redirect_url)
 
 
@@ -455,10 +458,8 @@ def oauth_redirect():
         return redirect(url_for("auth.login"))
 
     if oauth_code:
-        url = (
-            get_app_config("OAUTH_TOKEN_ENDPOINT")
-            or get_config("oauth_token_endpoint")
-            or "https://auth.majorleaguecyber.org/oauth/token"
+        url = get_app_config("OAUTH_TOKEN_ENDPOINT") or get_config(
+            "oauth_token_endpoint"
         )
 
         client_id = get_app_config("OAUTH_CLIENT_ID") or get_config("oauth_client_id")
@@ -476,10 +477,8 @@ def oauth_redirect():
 
         if token_request.status_code == requests.codes.ok:
             token = token_request.json()["access_token"]
-            user_url = (
-                get_app_config("OAUTH_API_ENDPOINT")
-                or get_config("oauth_api_endpoint")
-                or "https://api.majorleaguecyber.org/user"
+            user_url = get_app_config("OAUTH_API_ENDPOINT") or get_config(
+                "oauth_api_endpoint"
             )
 
             headers = {
@@ -495,7 +494,7 @@ def oauth_redirect():
             user = Users.query.filter_by(email=user_email).first()
             if user is None:
                 # Check if we are allowing registration before creating users
-                if registration_visible() or mlc_registration():
+                if registration_visible() or oauth_registration():
                     user = Users(
                         name=user_name,
                         email=user_email,
@@ -505,7 +504,10 @@ def oauth_redirect():
                     db.session.add(user)
                     db.session.commit()
                 else:
-                    log("logins", "[{date}] {ip} - Public registration via MLC blocked")
+                    log(
+                        "logins",
+                        "[{date}] {ip} - Public registration via OAuth blocked",
+                    )
                     error_for(
                         endpoint="auth.login",
                         message="Public registration is disabled. Please try again later.",

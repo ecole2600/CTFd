@@ -30,7 +30,8 @@ from CTFd.utils import config, get_config, set_config
 from CTFd.utils import user as current_user
 from CTFd.utils import validators
 from CTFd.utils.config import is_setup, is_teams_mode
-from CTFd.utils.config.pages import build_markdown, get_page
+from CTFd.utils.config.integrations import ctftime as is_ctftime_mode
+from CTFd.utils.config.pages import get_page
 from CTFd.utils.config.visibility import challenges_visible
 from CTFd.utils.dates import ctf_ended, ctftime, view_after_ctf
 from CTFd.utils.decorators import authed_only
@@ -116,9 +117,11 @@ def setup():
             password = request.form["password"]
 
             name_len = len(name) == 0
-            names = Users.query.add_columns("name", "id").filter_by(name=name).first()
+            names = Users.query.add_columns(
+                "name", "id").filter_by(name=name).first()
             emails = (
-                Users.query.add_columns("email", "id").filter_by(email=email).first()
+                Users.query.add_columns(
+                    "email", "id").filter_by(email=email).first()
             )
             pass_short = len(password) == 0
             pass_long = len(password) > 128
@@ -153,19 +156,19 @@ def setup():
             admin = Admins(
                 name=name, email=email, password=password, type="admin", hidden=True
             )
-
-            # Create an empty index page
             page = Pages(title=None, route="index", content="", draft=False)
+            # CTFtime Integration handled here
+            if is_ctftime_mode():
+                oauth_client_id = request.form.get("oauth_client_id")
+                oauth_client_secret = request.form.get("oauth_client_secret")
+                oauth_callback_endpoint = request.form.get(
+                    "oauth_callback_endpoint")
+                set_config("oauth_client_id", oauth_client_id)
+                set_config("oauth_client_secret", oauth_client_secret)
+                set_config("oauth_callback_endpoint", oauth_callback_endpoint)
 
-            # Upload banner
-            default_ctf_banner_location = url_for("views.themes", path="img/logo.png")
-            ctf_banner = request.files.get("ctf_banner")
-            if ctf_banner:
-                f = upload_file(file=ctf_banner, page_id=page.id)
-                default_ctf_banner_location = url_for("views.files", path=f.location)
-
-            # Splice in our banner
-            index = f"""<div class="row">
+            # Index page
+            index = """<div class="row">
     <div class="col-md-6 offset-md-3">
         <img class="w-100 mx-auto d-block" style="max-width: 500px;padding: 50px;padding-top: 14vh;" src="{default_ctf_banner_location}" />
         <h3 class="text-center">
@@ -190,8 +193,10 @@ def setup():
             set_config(
                 ConfigTypes.REGISTRATION_VISIBILITY, RegistrationVisibilityTypes.PUBLIC
             )
-            set_config(ConfigTypes.SCORE_VISIBILITY, ScoreVisibilityTypes.PUBLIC)
-            set_config(ConfigTypes.ACCOUNT_VISIBILITY, AccountVisibilityTypes.PUBLIC)
+            set_config(ConfigTypes.SCORE_VISIBILITY,
+                       ScoreVisibilityTypes.PUBLIC)
+            set_config(ConfigTypes.ACCOUNT_VISIBILITY,
+                       AccountVisibilityTypes.PUBLIC)
 
             # Verify emails
             set_config("verify_emails", None)
@@ -205,8 +210,10 @@ def setup():
             set_config("mail_useauth", None)
 
             # Set up default emails
-            set_config("verification_email_subject", DEFAULT_VERIFICATION_EMAIL_SUBJECT)
-            set_config("verification_email_body", DEFAULT_VERIFICATION_EMAIL_BODY)
+            set_config("verification_email_subject",
+                       DEFAULT_VERIFICATION_EMAIL_SUBJECT)
+            set_config("verification_email_body",
+                       DEFAULT_VERIFICATION_EMAIL_BODY)
 
             set_config(
                 "successful_registration_email_subject",
@@ -220,9 +227,11 @@ def setup():
             set_config(
                 "user_creation_email_subject", DEFAULT_USER_CREATION_EMAIL_SUBJECT
             )
-            set_config("user_creation_email_body", DEFAULT_USER_CREATION_EMAIL_BODY)
+            set_config("user_creation_email_body",
+                       DEFAULT_USER_CREATION_EMAIL_BODY)
 
-            set_config("password_reset_subject", DEFAULT_PASSWORD_RESET_SUBJECT)
+            set_config("password_reset_subject",
+                       DEFAULT_PASSWORD_RESET_SUBJECT)
             set_config("password_reset_body", DEFAULT_PASSWORD_RESET_BODY)
 
             set_config(
@@ -282,17 +291,12 @@ def integrations():
 
         if state:
             if name == "mlc":
-                mlc_client_id = request.values.get("mlc_client_id")
-                mlc_client_secret = request.values.get("mlc_client_secret")
-                set_config("oauth_client_id", mlc_client_id)
-                set_config("oauth_client_secret", mlc_client_secret)
+                oauth_client_id = request.values.get("mlc_client_id")
+                oauth_client_secret = request.values.get("mlc_client_secret")
+                set_config("oauth_client_id", oauth_client_id)
+                set_config("oauth_client_secret", oauth_client_secret)
                 return render_template("admin/integrations.html")
-            else:
-                abort(404)
-        else:
-            abort(403)
-    else:
-        abort(403)
+    abort(403)
 
 
 @views.route("/notifications", methods=["GET"])

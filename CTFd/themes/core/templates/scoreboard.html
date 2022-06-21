@@ -28,7 +28,7 @@
 					</tr>
 				</thead>
 				<tbody>
-				{% for standing in standings %}
+					{% for standing in standings %}
 					<tr>
 						<th scope="row" class="text-center">{{ loop.index }}</th>
 						<td>
@@ -36,21 +36,35 @@
 								{{ standing.name | truncate(50) }}
 
 								{% if standing.oauth_id %}
-									{% if Configs.user_mode == 'teams' %}
-									<a href="https://majorleaguecyber.org/t/{{ standing.name }}">
-										<span class="badge badge-primary">Official</span>
-									</a>
-									{% elif Configs.user_mode == 'users' %}
-									<a href="https://majorleaguecyber.org/u/{{ standing.name }}">
-										<span class="badge badge-primary">Official</span>
-									</a>
-									{% endif %}
+								{% if get_config('user_mode') == 'teams' %}
+								{% if integrations.mlc() %}
+								<a href="https://majorleaguecyber.org/t/{{ standing.name }}">
+									<span class="badge badge-primary">Official</span>
+								</a>
+								{% endif %}
+								{% if integrations.ctftime() %}
+								<a href="https://ctftime.org/team/{{ standing.oauth_id }}">
+									<span class="badge badge-primary">CTFtime</span>
+								</a>
+								{% endif %}
+								{% elif get_config('user_mode') == 'users' %}
+								{% if integrations.mlc() %}
+								<a href="https://majorleaguecyber.org/u/{{ standing.name }}">
+									<span class="badge badge-primary">Official</span>
+								</a>
+								{% endif %}
+								{% if integrations.ctftime() %}
+								<a href="https://ctftime.org/user/{{ standing.oauth_id }}">
+									<span class="badge badge-primary">CTFtime</span>
+								</a>
+								{% endif %}
+								{% endif %}
 								{% endif %}
 							</a>
 						</td>
 						<td>{{ standing.score }}</td>
 					</tr>
-				{% endfor %}
+					{% endfor %}
 				</tbody>
 			</table>
 		</div>
@@ -61,9 +75,9 @@
 {% endblock %}
 
 {% block scripts %}
-	<script defer src="{{ url_for('views.themes', path='js/echarts.bundle.js') }}"></script>
+<script defer src="{{ url_for('views.themes', path='js/echarts.bundle.js') }}"></script>
 {% endblock %}
 
 {% block entrypoint %}
-	<script defer src="{{ url_for('views.themes', path='js/pages/scoreboard.js') }}"></script>
+<script defer src="{{ url_for('views.themes', path='js/pages/scoreboard.js') }}"></script>
 {% endblock %}

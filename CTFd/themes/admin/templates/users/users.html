@@ -97,9 +97,16 @@
 								{{ user.name | truncate(32) }}
 							</a>
 							{% if user.oauth_id %}
+                                {% if integrations.mlc() %}
 								<a href="https://majorleaguecyber.org/u/{{ user.name }}">
 									<span class="badge badge-primary">Official</span>
 								</a>
+                                {% endif %}
+                                {% if integrations.ctftime() %}
+								<a href="https://ctftime.org/user/{{ user.oauth_id }}">
+									<span class="badge badge-primary">CTFtime</span>
+								</a>
+                                {% endif %}
 							{% endif %}
 							{% if user.website %}
 								<a href="{{ user.website }}" target="_blank" class="badge badge-info" rel="noopener">

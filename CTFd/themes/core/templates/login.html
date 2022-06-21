@@ -22,8 +22,16 @@
 			<hr>
 			{% endif %}
 
+			{% if integrations.ctftime() %}
+			<a class="btn btn-secondary btn-lg btn-block" href="{{ url_for('auth.oauth_login') }}">
+				Login with CTFtime
+			</a>
+
+			<hr>
+			{% endif %}
+
 			{% with form = Forms.auth.LoginForm() %}
-			<form method="post" accept-charset="utf-8" autocomplete="off">
+			<form method="post" accept-charset="utf-8" autocomplete="off" role="form" class="form-horizontal">
 				<div class="form-group">
 					<b>{{ form.name.label }}</b>
 					{{ form.name(class="form-control", value=name) }}
@@ -52,4 +60,3 @@
 
 {% block scripts %}
 {% endblock %}
-
