@@ -77,6 +77,11 @@ class DynamicValueChallenge(BaseChallenge):
             * (solve_count ** 2)
         ) + challenge.initial
 
+        value = (
+            ((challenge.minimum - challenge.initial) / (math.log(challenge.decay)))
+            * (math.log(solve_count)+1)
+        ) + challenge.initial
+
         value = math.ceil(value)
 
         if value < challenge.minimum:
